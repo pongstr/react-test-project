@@ -4,6 +4,9 @@
 - React
 - Typescript
 
+## ETA
+2-3 hours
+
 ## TODO
 
 ### Implement a `List` component with the following features:
@@ -18,7 +21,7 @@
 - Show indexes of the checked `List` items in the header of the page;
 - Generate a dummy dataset with **at least 100** items to test your solution;
 - Make nice UI;
-- Along with the app source code, provide setup instructions if any;
+- Push your solution to a public github repo and provide setup instructions if any;
 
 ## Sample datasets
 
