@@ -6,19 +6,19 @@
 
 ## TODO
 
-### Implement a List component with the following features:
+### Implement a `List` component with the following features:
 
 - Accepts an array of JSON data with any structure;
-- Accepts a required prop with renderer function;
+- Accepts a required prop with renderer function which defines content of the `Info` column (see below);
 - Multiple items can be checked;
-- Avoid unnecessary re-renders (performance);
+- **Avoid unnecessary re-renders** (performance);
 
 ### General requirements
 - Use Typescript (no `any` please)
-- Show indexes of the checked List items in the header of the page;
-- Generate a dummy dataset with at least 100 items to test your solution;
+- Show indexes of the checked `List` items in the header of the page;
+- Generate a dummy dataset with **at least 100** items to test your solution;
 - Make nice UI;
-- Along with the solution's source code, provide setup instructions if any;
+- Along with the app source code, provide setup instructions if any;
 
 ## Sample datasets
 
