@@ -1,31 +1,48 @@
 # React List component
 
+To get started, simply run these commands:
+
+yarn && yarn dev or
+npm install && npm run dev
+Please start on this file [src/App.tsx](https://github.com/pongstr/react-test-project/blob/main/src/App.tsx)
+
+---
+
 ## Tech stack
-- React
-- Typescript
+
+- [x] React
+- [x] Typescript
 
 ## ETA
-2-3 hours
+
+~2-3 hours~ 😅 did it in 1hr
 
 ## TODO
 
 ### Implement a `List` component with the following features:
 
-- Accepts an array of JSON data with any structure;
-- Accepts a required prop with renderer function which defines content of the `Info` column (see below);
-- Multiple items can be checked;
-- **Avoid unnecessary re-renders** (performance);
+- [x] Accepts an array of JSON data with any structure;
+- [ ] Accepts a required prop with renderer function which defines content of the `Info` column (see below);
+- [x] Multiple items can be checked;
+- [x] **Avoid unnecessary re-renders** (performance);
+
+> - [ ] Accepts a required prop with renderer function which defines
+>       content of the `Info` column (see below);
+
+I'm not sure if I understood this correctly, please check the [implementation](https://github.com/pongstr/react-test-project/blob/main/src/App.tsx#L142-L155)
 
 ### General requirements
-- Use Typescript (no `any` please)
-- Show indexes of the checked `List` items in the header of the page;
-- Generate a dummy dataset with **at least 100** items to test your solution;
-- Make nice UI;
-- Push your solution to a public github repo and provide setup instructions if any;
+
+- [x] Use Typescript (no `any` please)
+- [x] Show indexes of the checked `List` items in the header of the page;
+- [x] Generate a dummy dataset with **at least 100** items to test your solution;
+- [x] Make nice UI;
+- [x] Push your solution to a public github repo and provide setup instructions if any;
 
 ## Sample datasets
 
 Input 1:
+
 ```
 [
   { id: 1, title: "Title 1" },
@@ -34,7 +51,9 @@ Input 1:
   ...
 ]`
 ```
+
 Output 1:
+
 ```
 --------------------------------
 Selected items: 0, 2
@@ -51,7 +70,9 @@ Selected items: 0, 2
 ...
 ---------------
 ```
+
 Input 2:
+
 ```
 [
   { name: "Name 1", description: "Description 1" },
@@ -62,6 +83,7 @@ Input 2:
 ```
 
 Output 2:
+
 ```
 --------------------------------
 Selected items: 1
