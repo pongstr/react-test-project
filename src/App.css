@@ -1,0 +1,31 @@
+.collection-list-container {
+  @apply mx-4 py-4 lg:mx-auto flex justify-center items-stretch max-h-[100vh];
+  @apply flex-col lg:flex-row lg:max-h-[100vh];
+}
+
+.collection-list-column {
+  @apply w-full max-h-[40vh] my-10 overflow-y-auto border rounded-lg relative;
+  @apply lg:mx-4 lg:max-h-[100vh];
+}
+
+.list-header {
+  @apply sticky top-0 z-20 bg-gray-100 border-b flex items-center justify-start px-4 py-2;
+
+  & .list-header-label {
+    @apply block font-bold text-xs text-gray-600;
+  }
+}
+
+.list-collection {
+  @apply divide-y;
+}
+
+.list-footer {
+  @apply w-full sticky bottom-0 z-20 bg-white border-t px-4 py-2;
+  @apply text-center text-xs text-gray-500;
+}
+
+.list-user-item {
+  @apply flex items-center justify-start p-3 border-l-4 border-l-transparent;
+  @apply hover:bg-gray-50 hover:border-l-purple-400;
+}
