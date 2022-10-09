@@ -12,6 +12,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@legendapp/state": "^0.19.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "short-uuid": "^4.2.0"

@@ -1,15 +1,20 @@
-import React, { memo, useCallback } from 'react'
 import short from 'short-uuid'
-import { useAtom } from 'jotai'
-import { atomWithStorage, useReducerAtom } from 'jotai/utils'
+import React, {
+  memo,
+  ReactElement,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react'
+import { batch, observable, ObservableObject } from '@legendapp/state'
+import { useSelector, enableLegendStateReact } from '@legendapp/state/react'
+import { ObservablePersistLocalStorage } from '@legendapp/state/local-storage'
+import {
+  configureObservablePersistence,
+  persistObservable,
+} from '@legendapp/state/persist'
 import * as collection from './data/users.json'
 import './App.css'
-
-type SelectedUserModelType = UserModelType & { index: number }
-type SelectedUsersActionType = {
-  type: 'add' | 'remove' | 'add-all' | 'remove-all'
-  payload: SelectedUserModelType | SelectedUserModelType[]
-}
 
 type UserModelType = {
   uid: string
@@ -17,11 +22,20 @@ type UserModelType = {
   selected: boolean
   description: string
   link?: string
+  index: number
 }
 
-type CollectionListPropType = {
-  collection: UserModelType[]
-  render: (model: UserModelType, index: number) => React.ReactElement
+type SelectedUserModelType = UserModelType & {
+  id: string | number
+  index: number
+}
+
+type UsersDatabaseType = {
+  data: UserModelType[]
+}
+
+type SelectedDatabaseType = {
+  data: SelectedUserModelType[]
 }
 
 /**
@@ -37,9 +51,15 @@ type CollectionListPropType = {
  */
 
 // Dataset-A: Namespace
-const STORAGE_COLLECTION = 'collection.list'
+const STORAGE_COLLECTION = 'collection.users'
 // Dataset-B: Namespace
 const STORAGE_SELECTED = 'collection.selected'
+
+enableLegendStateReact()
+
+configureObservablePersistence({
+  persistLocal: ObservablePersistLocalStorage,
+})
 
 /**
  * CreateUsers:
@@ -47,187 +67,159 @@ const STORAGE_SELECTED = 'collection.selected'
  * - when users collection is empty, we'll create the list
  * - otherwise always return the one that's already stored
  */
-const createUsers = (): UserModelType[] => {
+const createUsers = (): UsersDatabaseType => {
   if (!window.localStorage.getItem(STORAGE_COLLECTION)) {
     window.localStorage.setItem(
       STORAGE_COLLECTION,
-      JSON.stringify(
-        collection.items.map((user: Partial<UserModelType>) => ({
-          ...user,
-          uid: short.uuid(),
-          selected: false,
-          link: user.link ?? '',
-        })),
-      ),
+      JSON.stringify({
+        data: collection.items.map(
+          (user: Partial<UserModelType>, index: number) => ({
+            ...user,
+            uid: short.uuid(),
+            selected: false,
+            link: user.link ?? '',
+            index,
+          }),
+        ),
+      }),
     )
   }
   return JSON.parse(window.localStorage.getItem(STORAGE_COLLECTION) as string)
 }
 
-// Intialize Dataset-A
-const usersCollectionAtom = atomWithStorage(STORAGE_COLLECTION, createUsers())
-
-//  Initialze Dataset-B
-const usersSelectedAtom = atomWithStorage<SelectedUserModelType[]>(
-  STORAGE_SELECTED,
-  [],
-)
+/**
+ * This is the part where we setup legend-state observables
+ * that will be utilized for our react app
+ */
+const usersDatabase$ = observable(createUsers())
+persistObservable(usersDatabase$, {
+  local: STORAGE_COLLECTION,
+})
 
 /**
- * usersSelectedReducer
- * let's setup the reducer here, which will be utilized for users to read/write
- * dataset-b content
+ * In addition to `usersDatabase$` we'll setup dataset-b here
+ * where we'll store selected items
  */
-const usersSelectedReducer = (
-  prev: SelectedUserModelType[],
-  action: SelectedUsersActionType,
-): SelectedUserModelType[] => {
-  const { type, payload } = action
-
-  if (Array.isArray(payload)) {
-    return type === 'add-all' ? [...payload] : []
-  }
-
-  const index = prev.findIndex(
-    (user: SelectedUserModelType) => user.uid === payload.uid,
-  )
-
-  if (index === -1 && type === 'add') {
-    return [...prev, payload]
-  }
-
-  if (index !== -1 && action.type === 'remove') {
-    const items = prev.slice()
-    items.splice(index, 1)
-    return items
-  }
-
-  return prev
-}
+const selectedDatabase$ = observable<SelectedDatabaseType>({ data: [] })
+persistObservable(selectedDatabase$, {
+  local: STORAGE_SELECTED,
+})
 
 /**
- * A component that displays an item from Dataset-A
+ * UsersCollectionItem Component
  */
-const UserItem: React.FC<{
-  user: SelectedUserModelType
-  onSelect: (user: SelectedUserModelType) => void
-}> = ({ user, onSelect }) => (
-  <>
-    <div className="mr-4">
-      <input
-        type="checkbox"
-        id={user.uid}
-        defaultChecked={user.selected}
-        onChange={(e: React.FormEvent<HTMLInputElement>) =>
-          onSelect({
-            ...user,
-            selected: e.currentTarget.checked,
-          })
-        }
-      />
-    </div>
-    <label
-      className="cursor-pointer"
-      htmlFor={user.uid}
-      title={`${user.name} - ${user.description}`}
-    >
-      <span className="block font-bold text-sm">{user.name}</span>
-      <span className="block font-light text-xs text-gray-500">
-        {user.description}
-      </span>
-    </label>
-  </>
-)
-
-const CollectionList: React.FC<CollectionListPropType> = ({
-  collection,
-  render,
-}) => {
-  return (
-    <div className="list-collection">
-      {collection.map((user: UserModelType, index: number) => (
-        <div key={user.uid} className="list-user-item">
-          {render(user, index)}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/**
- * A component that displays Dataset-A
- */
-const UsersResource: React.FC = () => {
-  const [collection, setCollection] = useAtom(usersCollectionAtom)
-  const [, dispatch] = useReducerAtom<
-    SelectedUserModelType[],
-    SelectedUsersActionType
-  >(usersSelectedAtom, usersSelectedReducer)
-
-  const UserItemMemo = memo(
-    (opts: {
-      user: SelectedUserModelType
-      onSelect: (user: SelectedUserModelType) => void
-    }) => <UserItem user={opts.user} onSelect={opts.onSelect} />,
-  )
-
-  const updateUserData = (u: SelectedUserModelType) => {
-    setCollection(collection.map((usr) => (usr.uid === u.uid ? { ...u } : usr)))
-    dispatch({
-      type: u.selected ? 'add' : 'remove',
-      payload: u,
+const UsersCollectionItem: React.FC<{
+  user: ObservableObject<UserModelType>
+  index: number
+}> = ({ user, index }) => {
+  const isSelected = useSelector(() => user.selected.get())
+  const onCheckboxChange = (e: React.FormEvent<HTMLInputElement>): void => {
+    batch(() => {
+      user.selected.set(e.currentTarget.checked)
     })
-  }
 
-  const selectAllUserData = (e: React.FormEvent<HTMLInputElement>): void => {
-    setCollection(
-      collection.map((item) => ({
-        ...item,
-        selected: e.currentTarget.checked,
-      })),
+    const collection = selectedDatabase$.data
+    const presence = collection.findIndex(
+      (item: SelectedUserModelType) => item.uid === user.uid.peek(),
     )
-    dispatch({
-      type: e.currentTarget.checked ? 'add-all' : 'remove-all',
-      payload: [...collection].map(
-        (user: UserModelType, index: number): SelectedUserModelType => ({
-          ...user,
-          index,
-        }),
-      ),
+
+    if (presence === -1 && e.currentTarget.checked) {
+      const current = user.get()
+      selectedDatabase$.data.push({ ...current, index, id: current.uid })
+      return
+    }
+
+    if (presence > -1 && !e.currentTarget.checked) {
+      selectedDatabase$.data.splice(presence, 1)
+      return
+    }
+  }
+
+  const handleSelectCheckbox = useCallback(onCheckboxChange, [index, user])
+  return (
+    <>
+      <div className="mr-4">
+        <input
+          type="checkbox"
+          id={user.uid.peek()}
+          checked={isSelected}
+          onChange={handleSelectCheckbox}
+        />
+      </div>
+      <label
+        className="cursor-pointer"
+        htmlFor={user.uid.peek()}
+        title={`${user.name} - ${user.description}`}
+      >
+        <span className="block font-bold text-sm">{user.name}</span>
+        <span className="block font-light text-xs text-gray-500">
+          {user.description}
+        </span>
+      </label>
+    </>
+  )
+}
+
+const SelectAllItems: React.FC = () => {
+  const [isChecked, setIsChecked] = useState(false)
+  const handleSelectAll = (e: React.FormEvent<HTMLInputElement>) => {
+    setIsChecked(e.currentTarget.checked)
+
+    if (!e.currentTarget.checked) {
+      batch(() => {
+        usersDatabase$.data.map((user: ObservableObject<UserModelType>) => {
+          user.selected.set(false)
+          return user
+        })
+        selectedDatabase$.data.set([])
+      })
+
+      return
+    }
+
+    batch(() => {
+      usersDatabase$.data.map((user: ObservableObject<UserModelType>) => {
+        user.selected.set(true)
+        return user
+      })
+
+      const users = usersDatabase$.data.get().map((user: UserModelType) => ({
+        ...user,
+        id: user.uid,
+        selected: true,
+      }))
+
+      selectedDatabase$.data.set(users)
     })
   }
 
-  const updateUserDataCallback = useCallback(updateUserData, [
-    setCollection,
-    collection,
-    dispatch,
-  ])
-
-  const selectAllUserDataCallback = useCallback(selectAllUserData, [
-    setCollection,
-    collection,
-    dispatch,
-  ])
-
+  const useHandleSelectAll = useCallback(handleSelectAll, [])
+  return (
+    <input type="checkbox" checked={isChecked} onChange={useHandleSelectAll} />
+  )
+}
+/**
+ *  UsersCollectList Component
+ */
+const UsersCollectionList: React.FC = () => {
   return (
     <>
       <div className="list-header">
         <div className="mr-4">
-          <input type="checkbox" onChange={selectAllUserDataCallback} />
+          <SelectAllItems />
         </div>
         <span className="list-header-label">Usernames</span>
       </div>
-      <div className="list-collection">
-        <CollectionList
-          collection={collection}
-          render={(user, index) => (
-            <UserItemMemo
-              user={{ ...user, index }}
-              onSelect={updateUserDataCallback}
-            />
-          )}
-        />
-      </div>
+      <ul className="list-collection">
+        {usersDatabase$.data.map(
+          (user: ObservableObject<UserModelType>, index: number) => (
+            <li key={String(user.uid.peek())} className="list-user-item">
+              <UsersCollectionItem index={index} user={user} />
+            </li>
+          ),
+        )}
+      </ul>
+
       <div className="list-footer">
         To deselect a user from the selected list, simply uncheck the the box
         beside their name.
@@ -237,32 +229,41 @@ const UsersResource: React.FC = () => {
 }
 
 /**
- * A component that displays Dataset-B
+ * UserSeletedItem Component
  */
-const UsersSelected: React.FC = () => {
-  const [selected] = useAtom<SelectedUserModelType[]>(usersSelectedAtom)
-  return selected.length === 0 ? (
-    <div className="h-full flex justify-center items-center">
-      <div className="text-center p-10">
-        <span className="block font-bold mb-0">No Selected Users</span>
-        <small className="text-gray-500">
-          To select a user, click on the checkbox beside their name.
-        </small>
-      </div>
-    </div>
-  ) : (
+const UserSelectedItem: React.FC<{
+  item: SelectedUserModelType
+}> = ({ item }) => {
+  return (
+    <li className="p-2 flex justify-start items-center">
+      <code>&#91;{item.index}&#93;</code>
+      <span>&nbsp;{item.name}</span>
+    </li>
+  )
+}
+
+const UserSelectedList: React.FC<{
+  render: (selected: SelectedUserModelType) => React.ReactElement
+}> = ({ render }) => {
+  const selectedDatabase = useSelector(() => selectedDatabase$.data.get())
+  return (
     <>
-      <div className="list-header py-3">
-        <span className="list-header-label">Selected Users</span>
-      </div>
-      <div className="list-collection">
-        {selected.map((user: SelectedUserModelType, index: number) => (
-          <div className="p-2" key={String(index)}>
-            <code>&#91;{user.index}&#93;</code>
-            <span>&nbsp;{user.name}</span>
-          </div>
+      <ul className="list-collection divide-x">
+        {selectedDatabase.length === 0 && (
+          <li className="h-[80vh] flex justify-center items-center">
+            <div className="text-center p-10">
+              <span className="block font-bold mb-0">No Selected Users</span>
+              <small className="text-gray-500">
+                To select a user, click on the checkbox beside their name.
+              </small>
+            </div>
+          </li>
+        )}
+
+        {selectedDatabase.map((selected: SelectedUserModelType) => (
+          <React.Fragment key={selected.uid}>{render(selected)}</React.Fragment>
         ))}
-      </div>
+      </ul>
     </>
   )
 }
@@ -271,14 +272,25 @@ const UsersSelected: React.FC = () => {
  * Root App
  */
 const App: React.FC = () => {
+  const MemoUserSelectedItem = memo((opts: { item: SelectedUserModelType }) => (
+    <UserSelectedItem item={opts.item} />
+  ))
+
   return (
     <React.StrictMode>
       <div className="collection-list-container">
         <div className="collection-list-column">
-          <UsersResource />
+          <UsersCollectionList />
         </div>
         <div className="collection-list-column">
-          <UsersSelected />
+          <div className="list-header py-3">
+            <span className="list-header-label">Selected Users</span>
+          </div>
+          <UserSelectedList
+            render={(user: SelectedUserModelType) => (
+              <MemoUserSelectedItem item={user} />
+            )}
+          />
         </div>
       </div>
     </React.StrictMode>
