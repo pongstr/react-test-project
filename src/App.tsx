@@ -1,11 +1,5 @@
 import short from 'short-uuid'
-import React, {
-  memo,
-  ReactElement,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react'
+import React, { memo, useCallback, useState } from 'react'
 import { batch, observable, ObservableObject } from '@legendapp/state'
 import { useSelector, enableLegendStateReact } from '@legendapp/state/react'
 import { ObservablePersistLocalStorage } from '@legendapp/state/local-storage'
@@ -39,8 +33,8 @@ type SelectedDatabaseType = {
 }
 
 /**
- * Let's setup the state manager in this section. We'll use Jotai
- * because I saw somewhere that this is cool, so we're trying it out.
+ * Let's setup the state manager in this section. We'll use Legend State
+ * we're trying out an observable state in react.
  *
  * The setup:
  *  let's use 2 dataset that will store the original list and one that will
@@ -55,8 +49,9 @@ const STORAGE_COLLECTION = 'collection.users'
 // Dataset-B: Namespace
 const STORAGE_SELECTED = 'collection.selected'
 
+// These are LegendState pre-requisites for react
 enableLegendStateReact()
-
+// this part is optional, but it stores data to localstorage
 configureObservablePersistence({
   persistLocal: ObservablePersistLocalStorage,
 })
@@ -113,10 +108,9 @@ const UsersCollectionItem: React.FC<{
   index: number
 }> = ({ user, index }) => {
   const isSelected = useSelector(() => user.selected.get())
+
   const onCheckboxChange = (e: React.FormEvent<HTMLInputElement>): void => {
-    batch(() => {
-      user.selected.set(e.currentTarget.checked)
-    })
+    batch(() => user.selected.set(e.currentTarget.checked))
 
     const collection = selectedDatabase$.data
     const presence = collection.findIndex(
@@ -137,29 +131,33 @@ const UsersCollectionItem: React.FC<{
 
   const handleSelectCheckbox = useCallback(onCheckboxChange, [index, user])
   return (
-    <>
+    <label
+      className="cursor-pointer p-2 flex justify-start items-center"
+      htmlFor={user.uid.peek()}
+      title={`${user.name.get()} - ${user.description.get()}`}
+    >
       <div className="mr-4">
         <input
           type="checkbox"
           id={user.uid.peek()}
           checked={isSelected}
           onChange={handleSelectCheckbox}
+          className="cursor-pointer"
         />
       </div>
-      <label
-        className="cursor-pointer"
-        htmlFor={user.uid.peek()}
-        title={`${user.name} - ${user.description}`}
-      >
+      <div>
         <span className="block font-bold text-sm">{user.name}</span>
         <span className="block font-light text-xs text-gray-500">
           {user.description}
         </span>
-      </label>
-    </>
+      </div>
+    </label>
   )
 }
 
+/**
+ * Select All Items Component
+ */
 const SelectAllItems: React.FC = () => {
   const [isChecked, setIsChecked] = useState(false)
   const handleSelectAll = (e: React.FormEvent<HTMLInputElement>) => {
@@ -195,7 +193,16 @@ const SelectAllItems: React.FC = () => {
 
   const useHandleSelectAll = useCallback(handleSelectAll, [])
   return (
-    <input type="checkbox" checked={isChecked} onChange={useHandleSelectAll} />
+    <label className="flex justify-start items-center cursor-pointer px-2">
+      <div className="mr-4">
+        <input
+          type="checkbox"
+          checked={isChecked}
+          onChange={useHandleSelectAll}
+        />
+      </div>
+      <span className="list-header-label">Usernames</span>
+    </label>
   )
 }
 /**
@@ -205,10 +212,7 @@ const UsersCollectionList: React.FC = () => {
   return (
     <>
       <div className="list-header">
-        <div className="mr-4">
-          <SelectAllItems />
-        </div>
-        <span className="list-header-label">Usernames</span>
+        <SelectAllItems />
       </div>
       <ul className="list-collection">
         {usersDatabase$.data.map(
@@ -235,20 +239,23 @@ const UserSelectedItem: React.FC<{
   item: SelectedUserModelType
 }> = ({ item }) => {
   return (
-    <li className="p-2 flex justify-start items-center">
+    <li className="list-user-item">
       <code>&#91;{item.index}&#93;</code>
       <span>&nbsp;{item.name}</span>
     </li>
   )
 }
 
+/**
+ * UserSelectedList Component
+ */
 const UserSelectedList: React.FC<{
   render: (selected: SelectedUserModelType) => React.ReactElement
 }> = ({ render }) => {
   const selectedDatabase = useSelector(() => selectedDatabase$.data.get())
   return (
     <>
-      <ul className="list-collection divide-x">
+      <ul className="list-collection">
         {selectedDatabase.length === 0 && (
           <li className="h-[80vh] flex justify-center items-center">
             <div className="text-center p-10">

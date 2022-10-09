@@ -3,29 +3,43 @@
   @apply flex-col lg:flex-row lg:max-h-[100vh];
 }
 
+.collection-list-column ~ .collection-list-column {
+  @apply mt-5 lg:mt-0;
+}
+
 .collection-list-column {
-  @apply w-full max-h-[40vh] my-10 overflow-y-auto border rounded-lg relative;
-  @apply lg:mx-4 lg:max-h-[100vh];
+  @apply w-full max-h-[50vh] h-[50vh] overflow-y-auto rounded-lg relative;
+  @apply lg:mx-4 lg:max-h-[100vh] lg:h-[96vh];
+  @apply border dark:border-zinc-800;
 }
 
 .list-header {
-  @apply sticky top-0 z-20 bg-gray-100 border-b flex items-center justify-start px-4 py-2;
+  @apply sticky top-0 z-20  flex items-center justify-start px-4 py-2;
+  @apply bg-gray-100 border-b;
+  @apply dark:bg-zinc-800 dark:border-b-zinc-800;
 
   & .list-header-label {
-    @apply block font-bold text-xs text-gray-600;
+    @apply block font-bold text-xs;
+    @apply text-gray-800 dark:text-gray-400;
   }
 }
 
-.list-collection {
-  @apply divide-y;
-}
-
 .list-footer {
-  @apply w-full sticky bottom-0 z-20 bg-white border-t px-4 py-2;
+  @apply w-full sticky bottom-0 z-20 border-t px-4 py-2;
+  @apply bg-white dark:bg-zinc-800 dark:border-t-zinc-800;
   @apply text-center text-xs text-gray-500;
 }
 
 .list-user-item {
-  @apply flex items-center justify-start p-3 border-l-4 border-l-transparent;
+  @apply flex items-center justify-start p-3 border-l-2 border-l-transparent;
+  @apply transition-colors border-b text-gray-600 dark:text-gray-400;
   @apply hover:bg-gray-50 hover:border-l-purple-400;
+  @apply dark:border-b-zinc-800 dark:bg-zinc-900;
+  @apply dark:hover:border-l-purple-500 dark:hover:bg-zinc-600/[0.25];
+}
+
+.list-user-item.highlighted {
+  @apply bg-gray-50 border-l-purple-400;
+  @apply dark:border-b-zinc-800 dark:bg-zinc-900;
+  @apply dark:border-l-purple-500 dark:bg-zinc-600/[0.25];
 }

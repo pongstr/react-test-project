@@ -15,7 +15,7 @@ Please start on this file [src/App.tsx](https://github.com/pongstr/react-test-pr
 
 ## ETA
 
-~2-3 hours~ 😅 did it in 1hr
+~2-3 hours~ 😅 did it in 2.5hrs (learned LegendState)
 
 ## TODO
 
